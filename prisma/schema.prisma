@@ -10,3 +10,18 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  payerId     Int      @map("payer_id")
+  vendorId    Int
+  amount      BigInt
+  paymentType Int
+  request     Json?
+  response    Json?
+  status      String
+  partnerId   Int?     @map("partner_id")
+  bankTransId Int?     @map("bank_trans_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+}

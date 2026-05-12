@@ -2,7 +2,6 @@ import { Controller, Query, Req } from '@nestjs/common';
 import { VendorService } from './vendor.service';
 import { Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { CreateVendorDto, UpdateVendorDto } from './dto/create-update.vendor.dto';
-import { PaginationOptionalDto, ParamId } from 'src/common/enums/prisma.type';
 import { GetVendorsDto } from './dto/get-vendor.dto';
 
 @Controller('vendor')

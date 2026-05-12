@@ -1,6 +1,6 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
-import { PayGateService } from './pay-gate.service';
-import { TransactionService } from '../transaction/transaction.service';
+import { InfinityPayGateService } from '@/integrations/infinity-pay/infinity-pay-gate.service';
+import { TransactionService } from '../transactions/transaction.service';
 import { PamPrepareDto } from '../../integrations/dto';
 import { VendorFormService } from '../vendor-forms/vendor-form.service';
 import { VendorService } from '../vendors/vendor.service';
@@ -10,7 +10,7 @@ import { TransactionType } from '@/common/enums/transaction.emum';
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   constructor(
-    private readonly payGate: PayGateService,
+    private readonly payGate: InfinityPayGateService,
     private readonly transactionService: TransactionService,
     private readonly vendorService: VendorService,
     private readonly vendorFormService: VendorFormService,
@@ -98,22 +98,29 @@ export class PaymentService {
     try {
       const transaction = await this.transactionService.getById(transactionId);
 
-      if (!transaction) {
-        throw new HttpException('Transaction not found for confirm pay: ', 404);
+      if (!transaction || !transaction.bankTransId) {
+        throw new HttpException(
+          'Transaction or bank transaction not found for confirm pay: ',
+          404,
+        );
       }
 
       const response = await this.payGate.payConfirm(
         confirmCode,
-        transaction.bank_transaction_id,
+        transaction.bankTransId,
       );
 
       await this.transactionService.update(transaction.id, {
         status: TransactionType.CONFIRM,
-        partner_transaction_id: parseInt(response.transaction_id),
+        partnerId: parseInt(response.transaction_id),
       });
 
-      return { ...response, labbay_transaction_id: transaction.id };
-    } catch (error) {
+      return {
+        ...response,
+        partner_transaction_id: response.transaction_id,
+        transaction_id: transaction.id,
+      };
+    } catch (error: any) {
       if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
         await this.transactionService.update(transactionId, {
           status: TransactionType.PROCESS,
@@ -130,16 +137,18 @@ export class PaymentService {
   // ---------------------------- PAY DETAILS ------------------------------
   async getFiscalDetails(transactionId: number) {
     const transaction = await this.transactionService.getById(transactionId);
-    return await this.payGate.getFiscalDetails(
-      transaction.partner_transaction_id,
-    );
+    if (!transaction || !transaction.partnerId)
+      throw new HttpException('Transaction partner ID not found', 404);
+
+    return await this.payGate.getFiscalDetails(transaction.partnerId);
   }
 
   async getChequeDetails(transactionId: number) {
     const transaction = await this.transactionService.getById(transactionId);
-    return await this.payGate.getChequeDetails(
-      transaction.partner_transaction_id,
-    );
+    if (!transaction || !transaction.partnerId)
+      throw new HttpException('Transaction partner ID not found', 404);
+
+    return await this.payGate.getChequeDetails(transaction.partnerId);
   }
 
   async payCheckStatus(transactionId: number) {

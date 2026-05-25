@@ -134,6 +134,41 @@ export class PaymentService {
     }
   }
 
+  async payById(param: any) {
+    const transaction = await this.transactionService.getById(
+      param.transaction_id,
+    );
+
+    if (!transaction || !transaction.bankTransId) {
+      throw new HttpException(
+        'Transaction or bank transaction not found for confirm pay: ',
+        404,
+      );
+    }
+  }
+
+  async preparePayById(params: any, lang: any) {}
+
+  // ---------------------------- PAY FINES ------------------------------
+  async payFines(params: any, lang: any) {
+    // return await this.payGate.payFines(transactionId);
+  }
+
+  // ---------------------------- PAY STICKER ------------------------------
+  async paySticker(params: any) {
+    // return await this.payGate.paySticker(params.transaction_id);
+  }
+
+  // ---------------------------- PAY DRB ------------------------------
+  async payDrb(params: any) {
+    // return await this.payGate.payDrb(transactionId);
+  }
+
+  // ---------------------------- PAY DRB INFO ------------------------------
+  async payDrbInfo(transactionId: number) {
+    // return await this.payGate.payDrbInfo(transactionId);
+  }
+
   // ---------------------------- PAY DETAILS ------------------------------
   async getFiscalDetails(transactionId: number) {
     const transaction = await this.transactionService.getById(transactionId);

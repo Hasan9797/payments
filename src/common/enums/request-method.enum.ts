@@ -6,6 +6,8 @@ export enum RequestMethodEnum {
   PAM_VENDOR_FORM = 'pam.vendor_form_v2',
   PAM_CHECK = 'pam.check',
   PAM_PAY_BY_CASH = 'pam.pay_by_cash',
+  PAM_PREPARE_PAY_BY_ID = 'pam.prepare_pay_by_id',
+  PAM_PAY_BY_ID = 'pam.pay_by_id',
   PAM_PREPARE_PAY = 'pam.prepare_pay',
   PAM_SEND_SMS = 'pam.send_sms',
   PAM_CONFIRM_PAY = 'pam.confirm_pay',

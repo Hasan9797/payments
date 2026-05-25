@@ -1,7 +1,16 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { GetCategoryDto } from '../categories/dto/get-category.dto';
-import { PamPrepareDto, QRRequestDto } from '../../integrations/dto';
+import { PamPrepareDto } from '../../integrations/dto';
+import { CreatePaymentByIdDto } from './dto/payment.dto';
 
 @Controller('payment')
 export class PaymentController {
@@ -26,9 +35,49 @@ export class PaymentController {
     );
   }
 
+  @Post('pay-by-id')
+  async payById(@Body() body: any) {
+    return await this.paymentService.payById(body);
+  }
+
+  @Post('prepare-pay-by-id')
+  async preparePayById(@Body() body: any) {
+    return await this.paymentService.preparePayById(body, body.lang);
+  }
+
+  // -------------- Pay Fines --------------
+  @Post('pay-fines')
+  async payFines(
+    @Body() params: CreatePaymentByIdDto,
+    @Headers('Accept-Language') lang: any,
+  ) {
+    if (params.amount) {
+      return await this.paymentService.payFines(params, lang);
+    }
+    return await this.paymentService.payFines(params, lang);
+  }
+
+  // -------------- Pay Sticker --------------
+  @Post('pay-sticker')
+  async paySticker(@Body() body: any, @Req() req) {
+    return await this.paymentService.paySticker(body);
+  }
+
+  // -------------- Pay DRB Info --------------
+  @Post('pay-drb-info')
+  async payDrbInfo(@Body() body: any) {
+    return await this.paymentService.payDrbInfo(body.transaction_id);
+  }
+
+  // -------------- Pay DRB --------------
+  @Post('pay-drb')
+  async payDrb(@Body() body: any) {
+    return await this.paymentService.payDrb(body.transaction_id);
+  }
+
   // -------------- Fincor Pay --------------
   @Post('fincor-pay')
-  async payByCash(@Body() body: QRRequestDto, @Req() req) {
+  async fincorPay(@Body() body: any, @Req() req) {
     return await this.paymentService.fincorPay(body);
   }
 

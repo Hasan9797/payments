@@ -1,8 +1,9 @@
 import { Controller, Query, Req } from '@nestjs/common';
 import { VendorService } from './vendor.service';
 import { Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
-import { CreateVendorDto, UpdateVendorDto } from './dto/create-update.vendor.dto';
+import { CreateVendorDto, UpdateVendorDto } from './dto/create-update.dto';
 import { GetVendorsDto } from './dto/get-vendor.dto';
+import { ParamById } from './dto/param-by-id.dto';
 
 @Controller('vendor')
 export class VendorController {
@@ -14,12 +15,12 @@ export class VendorController {
   }
 
   @Get(':id')
-  async findOne(@Param() param: ParamId) {
+  async findOne(@Param() param: ParamById) {
     return this.vendorService.getVendorById(param.id);
   }
 
   @Get(':id/forms')
-  async findVendorForms(@Param() param: ParamId) {
+  async findVendorForms(@Param() param: ParamById) {
     return this.vendorService.getVendorById(param.id);
   }
 
@@ -29,17 +30,17 @@ export class VendorController {
   }
 
   @Put(':id')
-  async update(@Param() param: ParamId, @Body() updateVendorDto: UpdateVendorDto) {
+  async update(@Param() param: ParamById, @Body() updateVendorDto: UpdateVendorDto) {
     return this.vendorService.updateVendor(param.id, updateVendorDto);
   }
 
   @Delete(':id')
-  async remove(@Param() param: ParamId) {
+  async remove(@Param() param: ParamById) {
     return this.vendorService.deleteVendor(param.id);
   }
 
   @Put('reload/:id') 
-  async reload(@Param() param: ParamId) {
+  async reload(@Param() param: ParamById) {
     return this.vendorService.reload(param.id)
   }
 }

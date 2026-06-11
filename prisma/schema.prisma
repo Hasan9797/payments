@@ -25,3 +25,11 @@ model Transaction {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 }
+
+model Vendor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}

@@ -15,24 +15,21 @@ export class PamCheckRequest extends InfinityPayHttpClient {
 
   getVendorForm() {
     const response: PamResponse | null = this.getResponse();
-
-    const arrayForm: Record<string, any> = {
-      static_amount: 0,
-    };
-
     const result = response?.result ?? [];
 
+    const arrayForm: Record<string, any> = {};
+
+    // Ma'lumotlarni obyektga kalit-qiymat (key-value) shaklida yig'amiz
     for (const item of result) {
-      if (item?.vendor_form) {
-        for (const vendorForm of item.vendor_form) {
-          arrayForm['static_amount'] =
-            vendorForm.key == this.amount_column ? vendorForm.value : 0;
-          arrayForm[vendorForm.key] = vendorForm.value;
-        }
+      for (const vendorForm of item?.vendor_form ?? []) {
+        arrayForm[vendorForm.key] = vendorForm.value;
       }
     }
 
-    return { vendor_info: result[0].additional_form, vendor_form: arrayForm };
+    return {
+      vendor_info: result[0]?.additional_form ?? null,
+      vendor_form: arrayForm,
+    };
   }
 
   getAdditionalForm() {

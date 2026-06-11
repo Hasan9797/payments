@@ -1,11 +1,7 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { PaginationOptionalDto } from 'src/common/enums/prisma.type';
-import { paginate } from 'src/common/helpers/paginate';
-import { CreateVendorDto, UpdateVendorDto } from './dto/create-update.vendor.dto';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { CreateVendorDto, UpdateVendorDto } from './dto/create-update.dto';
 import { GetVendorsDto } from './dto/get-vendor.dto';
-import { PayGateService } from '../payments/pay-gate.service';
-import { Status } from '@prisma/client';
 
 @Injectable()
 export class VendorService {
@@ -13,7 +9,6 @@ export class VendorService {
 
     constructor(
         private prisma: PrismaService,
-        private vendorService: PayGateService
     ) { }
 
     async createVendor(data: CreateVendorDto) {

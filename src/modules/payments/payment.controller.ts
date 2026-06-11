@@ -35,6 +35,7 @@ export class PaymentController {
     );
   }
 
+  // -------------- Pay By ID --------------
   @Post('pay-by-id')
   async payById(@Body() body: any) {
     return await this.paymentService.payById(body);
@@ -63,13 +64,12 @@ export class PaymentController {
     return await this.paymentService.paySticker(body);
   }
 
-  // -------------- Pay DRB Info --------------
+  // -------------- Pay DRB --------------
   @Post('pay-drb-info')
   async payDrbInfo(@Body() body: any) {
     return await this.paymentService.payDrbInfo(body.transaction_id);
   }
 
-  // -------------- Pay DRB --------------
   @Post('pay-drb')
   async payDrb(@Body() body: any) {
     return await this.paymentService.payDrb(body.transaction_id);

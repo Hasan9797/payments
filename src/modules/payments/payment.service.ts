@@ -43,10 +43,7 @@ export class PaymentService {
     const vendor = await this.vendorService.getByVendorId(
       parseInt(vendorForm.vendor_id),
     );
-    const payInfo = await this.payGate.payInfo(
-      vendorForm,
-      vendor.vendorForms[0]?.amount_field,
-    );
+    const payInfo = await this.payGate.payInfo(vendorForm, 'saldo');
 
     return { ...payInfo, vendor };
   }
@@ -56,26 +53,10 @@ export class PaymentService {
     const vendor = await this.vendorService.getByVendorId(
       Number(pamPrepareDto.vendor_form.vendor_id),
     );
-    let vendorForm = await this.vendorFormService.getByVendorId(
-      Number(pamPrepareDto.vendor_form.vendor_id),
-    );
-    let amount_field = 'amount';
-
-    if (vendorForm.length > 0) {
-      amount_field = vendorForm.find(
-        (item: any) => item.amount_field,
-      )?.amount_field;
-    }
-
-    if (pamPrepareDto.vendor_form.static_amount > 0) {
-      pamPrepareDto.vendor_form[amount_field] = Number(
-        pamPrepareDto.vendor_form.static_amount,
-      );
-    }
-
+    
     const transaction = await this.transactionService.create({
       user_id: userId,
-      amount: Number(pamPrepareDto.vendor_form[amount_field]),
+      amount: Number(pamPrepareDto.vendor_form.amount),
       vendor_id: Number(pamPrepareDto.vendor_form.vendor_id),
     });
 
@@ -134,6 +115,7 @@ export class PaymentService {
     }
   }
 
+  // ---------------------------- PAY BY ID ------------------------------
   async payById(param: any) {
     const transaction = await this.transactionService.getById(
       param.transaction_id,
@@ -160,13 +142,12 @@ export class PaymentService {
   }
 
   // ---------------------------- PAY DRB ------------------------------
-  async payDrb(params: any) {
-    // return await this.payGate.payDrb(transactionId);
-  }
-
-  // ---------------------------- PAY DRB INFO ------------------------------
   async payDrbInfo(transactionId: number) {
     // return await this.payGate.payDrbInfo(transactionId);
+  }
+
+  async payDrb(params: any) {
+    // return await this.payGate.payDrb(transactionId);
   }
 
   // ---------------------------- PAY DETAILS ------------------------------

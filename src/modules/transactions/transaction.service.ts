@@ -2,6 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { VendorService } from '../vendors/vendor.service';
 import { PrismaService } from '@/common/prisma/prisma.service';
 
+interface ExistsParamsDto {
+  id?: number;
+  status?: string;
+}
+
 @Injectable()
 export class TransactionService {
   private readonly logger = new Logger(TransactionService.name);
@@ -14,6 +19,14 @@ export class TransactionService {
 
   async getById(id: number) {
     return this.prisma.transaction.findUnique({ where: { id } });
+  }
+
+  async existsByParams(params: ExistsParamsDto): Promise<boolean> {
+    const count = await this.prisma.transaction.count({
+      where: params,
+    });
+
+    return count > 0;
   }
 
   async create(data: any) {

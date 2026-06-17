@@ -16,11 +16,12 @@ import {
   PamGetVendorRequest,
   PamP2PInfoRequest,
   PamPayByCashRequest,
+  PamPreparePayByIdRequest,
   PamPreparePayRequest,
   PamSendSmsRequest,
 } from './requests';
 
-import { PamPrepareDto } from '../dto';
+import { PamPrepareRequestDto, PamPreparePayByIdRequestDto } from '../dto';
 
 @Injectable()
 export class InfinityPayGateService {
@@ -55,7 +56,7 @@ export class InfinityPayGateService {
   }
 
   // ---------------------------- PAY BY CARD ------------------------------
-  async payPrepare(preparePay: PamPrepareDto) {
+  async payPrepare(preparePay: PamPrepareRequestDto) {
     const request = new PamPreparePayRequest(preparePay);
     const response = await request.send();
 
@@ -83,6 +84,20 @@ export class InfinityPayGateService {
 
   async payConfirm(confirmCode: string, bankTransactionId: number) {
     const request = new PamConfirmPayRequest(confirmCode, bankTransactionId);
+    const response = await request.send();
+
+    if (!response.isOk()) {
+      throw new BadRequestException({
+        message: response.getMessage(),
+        code: response.getErrorCode(),
+      });
+    }
+
+    return response.getDetails();
+  }
+
+  async preparePayById(requestData: PamPreparePayByIdRequestDto) {
+    const request = new PamPreparePayByIdRequest(requestData);
     const response = await request.send();
 
     if (!response.isOk()) {

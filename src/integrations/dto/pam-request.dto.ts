@@ -9,7 +9,12 @@ class PayFormDto {
   card_expire: string;
 }
 
-export class PamPrepareDto {
+class PayPrepareByIdPayFormDto {
+  @IsString()
+  card_id: string;
+}
+
+export class PamPrepareRequestDto {
   @IsObject()
   vendor_form: any;
 
@@ -17,6 +22,16 @@ export class PamPrepareDto {
   @ValidateNested()
   @Type(() => PayFormDto)
   pay_form: PayFormDto;
+}
+
+export class PamPreparePayByIdRequestDto {
+  @IsObject()
+  vendor_form: any;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => PayPrepareByIdPayFormDto)
+  pay_form: PayPrepareByIdPayFormDto;
 }
 
 export class QRRequestDto {

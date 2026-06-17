@@ -1,7 +1,7 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InfinityPayGateService } from '@/integrations/infinity-pay/infinity-pay-gate.service';
 import { TransactionService } from '../transactions/transaction.service';
-import { PamPrepareDto } from '../../integrations/dto';
+import { PamPrepareRequestDto, PamPreparePayByIdRequestDto } from '../../integrations/dto';
 import { VendorFormService } from '../vendor-forms/vendor-form.service';
 import { VendorService } from '../vendors/vendor.service';
 import { TransactionType } from '@/common/enums/transaction.emum';
@@ -49,11 +49,11 @@ export class PaymentService {
   }
 
   // ---------------------------- PAY BY CARD ------------------------------
-  async payPrepare(pamPrepareDto: PamPrepareDto, userId: number = 2) {
+  async payPrepare(pamPrepareDto: PamPrepareRequestDto, userId: number = 2) {
     const vendor = await this.vendorService.getByVendorId(
       Number(pamPrepareDto.vendor_form.vendor_id),
     );
-    
+
     const transaction = await this.transactionService.create({
       user_id: userId,
       amount: Number(pamPrepareDto.vendor_form.amount),
@@ -65,7 +65,7 @@ export class PaymentService {
     const response = await this.payGate.payPrepare(pamPrepareDto);
 
     await this.transactionService.update(transaction.id, {
-      bank_transaction_id: response.bank_transaction_id,
+      bankTransId: response.bank_transaction_id,
     });
 
     return {
@@ -116,9 +116,9 @@ export class PaymentService {
   }
 
   // ---------------------------- PAY BY ID ------------------------------
-  async payById(param: any) {
+  async payById(params: any) {
     const transaction = await this.transactionService.getById(
-      param.transaction_id,
+      params.transaction_id,
     );
 
     if (!transaction || !transaction.bankTransId) {
@@ -129,7 +129,43 @@ export class PaymentService {
     }
   }
 
-  async preparePayById(params: any, lang: any) {}
+  async preparePayById(params: any, lang: any) {
+    const order_id = params.order_id;
+    const fine_serial_letters = order_id.slice(0, 2);
+    const rest_of_fine_number = order_id.slice(2);
+    let payload: PamPreparePayByIdRequestDto;
+
+    payload = {
+      vendor_form: {
+        NDECREE: rest_of_fine_number,
+        code: fine_serial_letters,
+        amount: params.amount,
+        vendor_id: 106331,
+      },
+      pay_form: {
+        card_id: params.card_id,
+      },
+    };
+
+    const currentTransaction = await this.transactionService.existsByParams({
+      id: params.transaction_id,
+      status: TransactionType.CONFIRM,
+    });
+
+    if (currentTransaction) {
+      throw new HttpException(
+        'Транзакция завершена. Пожалуйста, ожидайте закрытия заявки',
+        400,
+      );
+    }
+
+    const response = await this.payGate.preparePayById(payload);
+
+    return {
+      ...response,
+      transaction_id: params.transaction_id,
+    };
+  }
 
   // ---------------------------- PAY FINES ------------------------------
   async payFines(params: any, lang: any) {

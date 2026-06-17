@@ -19,6 +19,7 @@ export enum RequestMethodEnum {
   PAYSYS_GET_AGENT_DEPOSITS = 'paysys.get_agent_deposits',
   PAM_GET_SERVICE_BALANCE_HISTORY = 'pam.get_service_balance_history',
   PAM_GET_PAYMENT_TRANSACTIONS_CSV = 'pam.get_payment_transactions_csv',
+  PAM_GET_CHEQUE = 'pam.get_cheque',
   PAM_GET_CHEQUE_DETAILS = 'pam.get_cheque_details',
   CASH2CARD_PREPARE_REMITTANCE = 'cash2card.prepare_remittance',
   CASH2CARD_CONFIRM_REMITTANCE = 'cash2card.confirm_remittance',

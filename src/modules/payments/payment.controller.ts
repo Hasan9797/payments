@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { GetCategoryDto } from '../categories/dto/get-category.dto';
-import { PamPrepareDto } from '../../integrations/dto';
+import { PamPrepareRequestDto } from '../../integrations/dto';
 import { CreatePaymentByIdDto } from './dto/payment.dto';
 
 @Controller('payment')
@@ -23,7 +23,7 @@ export class PaymentController {
 
   // -------------- Pay By Card --------------
   @Post('pay-prepare')
-  payPrepare(@Body() body: PamPrepareDto) {
+  payPrepare(@Body() body: PamPrepareRequestDto) {
     return this.paymentService.payPrepare(body);
   }
 

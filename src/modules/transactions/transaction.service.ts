@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { VendorService } from '../vendors/vendor.service';
 import { PrismaService } from '@/common/prisma/prisma.service';
+import { StatusEnum } from '@prisma/client';
 
 interface ExistsParamsDto {
-  id?: number;
-  status?: string;
+  account?: string;
+  status: StatusEnum;
 }
 
 @Injectable()
@@ -30,10 +31,17 @@ export class TransactionService {
   }
 
   async create(data: any) {
-    return this.prisma.transaction.create({ data });
+    return await this.prisma.transaction.create({ data });
   }
 
-  async update(id: number, data: any) {}
+  async update(id: number, data: any) {
+    return await this.prisma.transaction.update({
+      where: { id },
+      data,
+    });
+  }
 
-  async delete(id: number) {}
+  async delete(id: number) {
+    return await this.prisma.transaction.delete({ where: { id } });
+  }
 }

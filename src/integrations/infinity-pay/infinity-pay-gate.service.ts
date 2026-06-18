@@ -82,8 +82,8 @@ export class InfinityPayGateService {
     return response.getResponse();
   }
 
-  async payConfirm(confirmCode: string, bankTransactionId: number) {
-    const request = new PamConfirmPayRequest(confirmCode, bankTransactionId);
+  async payConfirm(confirmCode: string, bankTransId: string) {
+    const request = new PamConfirmPayRequest(confirmCode, bankTransId);
     const response = await request.send();
 
     if (!response.isOk()) {
@@ -129,7 +129,7 @@ export class InfinityPayGateService {
     return response.getResponse();
   }
 
-  async getChequeDetails(partnerTransactionId: number) {
+  async getChequeDetails(partnerTransactionId: string) {
     const request = new PamGetChequeDetailsRequest(partnerTransactionId);
     const response = await request.send();
 
@@ -142,7 +142,7 @@ export class InfinityPayGateService {
     return response.getResponse();
   }
 
-  async getFiscalDetails(partnerTransactionId: number) {
+  async getFiscalDetails(partnerTransactionId: string) {
     const request = new PamGetFiscalDetailsRequest(partnerTransactionId);
     const response = await request.send();
 

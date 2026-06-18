@@ -1,10 +1,16 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InfinityPayGateService } from '@/integrations/infinity-pay/infinity-pay-gate.service';
 import { TransactionService } from '../transactions/transaction.service';
-import { PamPrepareRequestDto, PamPreparePayByIdRequestDto } from '../../integrations/dto';
+import {
+  PamPrepareRequestDto,
+  PamPreparePayByIdRequestDto,
+} from '../../integrations/dto';
 import { VendorFormService } from '../vendor-forms/vendor-form.service';
 import { VendorService } from '../vendors/vendor.service';
-import { TransactionType } from '@/common/enums/transaction.emum';
+import {
+  TransactionStatus,
+  TransactionType,
+} from '@/common/enums/transaction.emum';
 
 @Injectable()
 export class PaymentService {
@@ -27,11 +33,11 @@ export class PaymentService {
     } catch (error: any) {
       if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
         // await this.transactionService.update(transaction.id, {
-        //   status: TransactionType.PROCESS,
+        //   status: TransactionStatus.PENDING,
         // });
       } else {
         // await this.transactionService.update(transaction.id, {
-        //   status: TransactionType.ERROR,
+        //   status: TransactionStatus.FAILED,
         // });
       }
       throw new HttpException(error, error.status);
@@ -56,7 +62,7 @@ export class PaymentService {
 
     const transaction = await this.transactionService.create({
       user_id: userId,
-      amount: Number(pamPrepareDto.vendor_form.amount),
+      amount: pamPrepareDto.vendor_form.amount,
       vendor_id: Number(pamPrepareDto.vendor_form.vendor_id),
     });
 
@@ -65,7 +71,8 @@ export class PaymentService {
     const response = await this.payGate.payPrepare(pamPrepareDto);
 
     await this.transactionService.update(transaction.id, {
-      bankTransId: response.bank_transaction_id,
+      status: TransactionStatus.PENDING,
+      bankTransactionId: response.bank_transaction_id,
     });
 
     return {
@@ -79,7 +86,7 @@ export class PaymentService {
     try {
       const transaction = await this.transactionService.getById(transactionId);
 
-      if (!transaction || !transaction.bankTransId) {
+      if (!transaction || !transaction.bankTransactionId) {
         throw new HttpException(
           'Transaction or bank transaction not found for confirm pay: ',
           404,
@@ -88,12 +95,12 @@ export class PaymentService {
 
       const response = await this.payGate.payConfirm(
         confirmCode,
-        transaction.bankTransId,
+        transaction.bankTransactionId,
       );
 
       await this.transactionService.update(transaction.id, {
-        status: TransactionType.CONFIRM,
-        partnerId: parseInt(response.transaction_id),
+        status: TransactionStatus.SUCCESS,
+        partnerTransactionId: parseInt(response.transaction_id),
       });
 
       return {
@@ -104,11 +111,11 @@ export class PaymentService {
     } catch (error: any) {
       if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
         await this.transactionService.update(transactionId, {
-          status: TransactionType.PROCESS,
+          status: TransactionStatus.PENDING,
         });
       } else {
         await this.transactionService.update(transactionId, {
-          status: TransactionType.ERROR,
+          status: TransactionStatus.FAILED,
         });
       }
       throw new HttpException(error, error.status);
@@ -121,7 +128,7 @@ export class PaymentService {
       params.transaction_id,
     );
 
-    if (!transaction || !transaction.bankTransId) {
+    if (!transaction || !transaction.bankTransactionId) {
       throw new HttpException(
         'Transaction or bank transaction not found for confirm pay: ',
         404,
@@ -147,24 +154,63 @@ export class PaymentService {
       },
     };
 
-    const currentTransaction = await this.transactionService.existsByParams({
-      id: params.transaction_id,
-      status: TransactionType.CONFIRM,
-    });
+    try {
+      const currentTransaction = await this.transactionService.existsByParams({
+        account: params.invoice_number,
+        status: TransactionStatus.SUCCESS,
+      });
 
-    if (currentTransaction) {
-      throw new HttpException(
-        'Транзакция завершена. Пожалуйста, ожидайте закрытия заявки',
-        400,
-      );
+      if (currentTransaction) {
+        throw new HttpException(
+          'Транзакция завершена. Пожалуйста, ожидайте закрытия заявки',
+          400,
+        );
+      }
+
+      if (fine_serial_letters === 'MB') {
+        payload = {
+          vendor_form: {
+            payment_code: '01',
+            INVOICE: params.invoice_number,
+            amount: params.amount,
+            vendor_id: 106329,
+          },
+          pay_form: {
+            card_id: params.card_id,
+          },
+        };
+      }
+
+      const response = await this.payGate.preparePayById(payload);
+
+      await this.transactionService.create({
+        id: params.transaction_id,
+        amount: params.amount,
+        account: params.invoice_number,
+        total: params.amount,
+        cardId: params.card_id,
+        cardNumber: params.card_number,
+        vendorId: payload.vendor_form.vendor_id,
+        bankTransactionId: response.bank_transaction_id,
+        source: params.source,
+        status: TransactionStatus.PENDING,
+        type: TransactionType.FINE,
+        request: JSON.stringify(payload),
+        response: JSON.stringify(response),
+      });
+
+      return {
+        ...response,
+        transaction_id: params.transaction_id,
+      };
+    } catch (error: any) {
+      if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
+        await this.transactionService.update(params.transaction_id, {
+          status: TransactionStatus.FAILED,
+        });
+      }
+      throw new HttpException(error, error.status);
     }
-
-    const response = await this.payGate.preparePayById(payload);
-
-    return {
-      ...response,
-      transaction_id: params.transaction_id,
-    };
   }
 
   // ---------------------------- PAY FINES ------------------------------
@@ -189,18 +235,22 @@ export class PaymentService {
   // ---------------------------- PAY DETAILS ------------------------------
   async getFiscalDetails(transactionId: number) {
     const transaction = await this.transactionService.getById(transactionId);
-    if (!transaction || !transaction.partnerId)
+    if (!transaction || !transaction.partnerTransactionId)
       throw new HttpException('Transaction partner ID not found', 404);
 
-    return await this.payGate.getFiscalDetails(transaction.partnerId);
+    return await this.payGate.getFiscalDetails(
+      transaction.partnerTransactionId,
+    );
   }
 
   async getChequeDetails(transactionId: number) {
     const transaction = await this.transactionService.getById(transactionId);
-    if (!transaction || !transaction.partnerId)
+    if (!transaction || !transaction.partnerTransactionId)
       throw new HttpException('Transaction partner ID not found', 404);
 
-    return await this.payGate.getChequeDetails(transaction.partnerId);
+    return await this.payGate.getChequeDetails(
+      transaction.partnerTransactionId,
+    );
   }
 
   async payCheckStatus(transactionId: number) {

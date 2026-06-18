@@ -11,19 +11,40 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum StatusEnum {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  payerId     Int      @map("payer_id")
-  vendorId    Int
-  amount      BigInt
-  paymentType Int
-  request     Json?
-  response    Json?
-  status      String
-  partnerId   Int?     @map("partner_id")
-  bankTransId Int?     @map("bank_trans_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                   Int        @id @default(autoincrement())
+  userId               String?    @map("user_id")
+  maskedPhone          String?    @map("masked_phone")
+  bankTransactionId    String?    @map("bank_transaction_id")
+  cardNumber           String?    @map("card_number")
+  cardId               String?    @map("card_id")
+  referenceNumber      String?    @map("reference_number")
+  amount               String?
+  account              String?
+  total                String?
+  comission            Float?
+  merchantId           String?    @map("merchant_id")
+  terminalId           String?    @map("terminal_id")
+  partnerTransactionId String?    @map("partner_transaction_id")
+  carNumber            String?    @map("car_number")
+  source               String?
+  checkUrl             String?    @map("check_url")
+  status               StatusEnum @default(PENDING)
+  type                 String?
+  request              Json?      @map("request")
+  response             Json?      @map("response")
+  vendorId             Int?       @map("vendor_id")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+  deletedAt            DateTime?  @map("deleted_at")
+
+  @@map("transactions")
 }
 
 model Vendor {

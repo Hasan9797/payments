@@ -5,6 +5,7 @@ import { StatusEnum } from '@prisma/client';
 
 interface ExistsParamsDto {
   account?: string;
+  type?: string;
   status: StatusEnum;
 }
 

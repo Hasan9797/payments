@@ -1,18 +1,13 @@
 import { RequestMethodEnum } from '@/common/enums';
 import { InfinityPayHttpClient } from '../http-client';
+import { PamPayByIdRequestDto } from '@/integrations/dto/pam-request.dto';
 
 export class PamPayByIdRequest extends InfinityPayHttpClient {
-  constructor(vendorForm: Record<string, any>) {
+  constructor(requestData: PamPayByIdRequestDto) {
     super();
-    const partnerTransId = vendorForm['transactionId'];
 
     this.setMethod(RequestMethodEnum.PAM_PAY_BY_ID)
-      .setParams({
-        vendor_form: vendorForm,
-        pay_form: {
-          card_id: partnerTransId,
-        },
-      })
+      .setParams(requestData)
       .setIsLog(true);
   }
 

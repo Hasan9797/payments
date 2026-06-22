@@ -1,9 +1,9 @@
 import { RequestMethodEnum } from '@/common/enums';
 import { InfinityPayHttpClient } from '../http-client';
-import { PamPreparePayByIdRequestDto } from '@/integrations/dto/pam-request.dto';
+import { PamPayByIdRequestDto } from '@/integrations/dto/pam-request.dto';
 
 export class PamPreparePayByIdRequest extends InfinityPayHttpClient {
-  constructor(requestData: PamPreparePayByIdRequestDto) {
+  constructor(requestData: PamPayByIdRequestDto) {
     super();
 
     this.setMethod(RequestMethodEnum.PAM_PREPARE_PAY_BY_ID)

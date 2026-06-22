@@ -37,13 +37,16 @@ export class PaymentController {
 
   // -------------- Pay By ID --------------
   @Post('pay-by-id')
-  async payById(@Body() body: any) {
-    return await this.paymentService.payById(body);
+  async payById(@Body() body: any, @Headers('Accept-Language') lang: any) {
+    return await this.paymentService.payById(body, lang);
   }
 
   @Post('prepare-pay-by-id')
-  async preparePayById(@Body() body: any) {
-    return await this.paymentService.preparePayById(body, body.lang);
+  async preparePayById(
+    @Body() body: any,
+    @Headers('Accept-Language') lang: any,
+  ) {
+    return await this.paymentService.preparePayById(body, lang);
   }
 
   // -------------- Pay Fines --------------
@@ -52,9 +55,6 @@ export class PaymentController {
     @Body() params: CreatePaymentByIdDto,
     @Headers('Accept-Language') lang: any,
   ) {
-    if (params.amount) {
-      return await this.paymentService.payFines(params, lang);
-    }
     return await this.paymentService.payFines(params, lang);
   }
 

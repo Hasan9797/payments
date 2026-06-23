@@ -13,7 +13,7 @@ generator client {
 
 enum StatusEnum {
   PENDING
-  SUCCESS
+  CONFIRMED
   FAILED
 }
 

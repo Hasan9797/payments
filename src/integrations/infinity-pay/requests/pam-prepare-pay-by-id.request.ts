@@ -11,8 +11,12 @@ export class PamPreparePayByIdRequest extends InfinityPayHttpClient {
       .setIsLog(true);
   }
 
-  getDetails() {
+  getBankTransactionId(): string | null {
     const result: any = this.getResult();
-    return result?.details;
+    return (
+      result?.confirm_form.find(
+        (item: any) => item.key === 'bank_transaction_id',
+      )?.value ?? null
+    );
   }
 }

@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { VendorService } from '../vendors/vendor.service';
 import { PrismaService } from '@/common/prisma/prisma.service';
-import { StatusEnum } from '@prisma/client';
+import { TransactionStatus } from '@/common/enums/transaction.emum';
 
 interface ExistsParamsDto {
   account?: string;
   type?: string;
-  status: StatusEnum;
+  status: TransactionStatus;
 }
 
 @Injectable()

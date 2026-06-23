@@ -98,9 +98,9 @@ export class InfinityPayGateService {
   }
 
   // ---------------------------- PAY BY ID ------------------------------
-  async payById(requestData: PamPayByIdRequestDto) {
+  async payById(requestData: PamPayByIdRequestDto, header: any) {
     const request = new PamPayByIdRequest(requestData);
-    const response = await request.send();
+    const response = await request.send(0, header);
 
     if (!response.isOk()) {
       throw new BadRequestException({
@@ -112,9 +112,9 @@ export class InfinityPayGateService {
     return response.getDetails();
   }
 
-  async preparePayById(requestData: PamPayByIdRequestDto) {
+  async preparePayById(requestData: PamPayByIdRequestDto, header: any) {
     const request = new PamPreparePayByIdRequest(requestData);
-    const response = await request.send();
+    const response = await request.send(0, header);
 
     if (!response.isOk()) {
       throw new BadRequestException({
@@ -123,7 +123,10 @@ export class InfinityPayGateService {
       });
     }
 
-    return response.getDetails();
+    return {
+      result: response.getResult(),
+      bankTransactionId: response.getBankTransactionId(),
+    };
   }
 
   async resendSms() {

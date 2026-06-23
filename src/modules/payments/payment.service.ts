@@ -11,6 +11,7 @@ import {
   TransactionStatus,
   TransactionType,
 } from '@/common/enums/transaction.emum';
+import { VendorFormValidatorHelper } from '@/common/helpers/vendor-form-validate.helper';
 
 @Injectable()
 export class PaymentService {
@@ -99,7 +100,7 @@ export class PaymentService {
       );
 
       await this.transactionService.update(transaction.id, {
-        status: TransactionStatus.SUCCESS,
+        status: TransactionStatus.CONFIRMED,
         partnerTransactionId: parseInt(response.transaction_id),
       });
 
@@ -123,60 +124,63 @@ export class PaymentService {
   }
 
   // ---------------------------- PAY BY ID ------------------------------
-  async payById(params: any, lang: any) {
-    const transaction = await this.transactionService.getById(
-      params.transaction_id,
-    );
-
-    if (!transaction || !transaction.bankTransactionId) {
-      throw new HttpException(
-        'Transaction or bank transaction not found for confirm pay: ',
-        404,
-      );
-    }
+  async payById(
+    requestBody: PamPayByIdRequestDto,
+    lang: any,
+    extraData: Record<string, any> = {},
+  ) {
+    const headers = {
+      'Card-Token': extraData.cardToken,
+      'Accept-Language': lang,
+    };
   }
 
-  async preparePayById(params: any, lang: any) {
-    const payload = {};
-
+  async preparePayById(
+    requestBody: PamPayByIdRequestDto,
+    lang: any,
+    extraData: Record<string, any> = {},
+  ) {
+    let transaction: any = {};
     try {
-      const currentTransaction = await this.transactionService.existsByParams({
-        account: params.invoice_number,
-        status: TransactionStatus.SUCCESS,
-      });
+      const vendorForms = await this.vendorFormService.getByVendorId(
+        requestBody.vendor_form.vendor_id,
+      );
 
-      if (currentTransaction) {
-        throw new HttpException(
-          'Транзакция завершена. Пожалуйста, ожидайте закрытия заявки',
-          400,
-        );
+      if (vendorForms.length === 0) {
+        throw new HttpException('Vendor forms not found', 404);
       }
 
-      const response = await this.payGate.preparePayById(payload);
+      VendorFormValidatorHelper.validateForm(vendorForms, requestBody);
 
-      const transaction = await this.transactionService.create({
-        id: params.transaction_id,
-        amount: params.amount,
-        account: params.invoice_number,
-        total: params.amount,
-        cardId: params.card_id,
-        cardNumber: params.card_number,
-        vendorId: params.vendor_id,
-        bankTransactionId: response.bank_transaction_id,
-        source: params.source,
+      const headers = {
+        'Accept-Language': lang,
+      };
+
+      const { result, bankTransactionId } = await this.payGate.preparePayById(
+        requestBody,
+        headers,
+      );
+
+      transaction = await this.transactionService.create({
+        maskedPhone: result.masked_phone,
+        amount: requestBody.vendor_form.amount,
+        total: requestBody.vendor_form.amount,
+        cardId: requestBody.pay_form.card_id,
+        vendorId: requestBody.vendor_form.vendor_id,
+        bankTransactionId: bankTransactionId,
         status: TransactionStatus.PENDING,
-        type: params.type,
-        request: JSON.stringify(payload),
-        response: JSON.stringify(response),
+        request: JSON.stringify(requestBody),
+        response: JSON.stringify(result),
+        ...extraData,
       });
 
       return {
-        ...response,
+        ...result,
         transaction_id: transaction.id,
       };
     } catch (error: any) {
       if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
-        await this.transactionService.update(params.transaction_id, {
+        await this.transactionService.update(transaction.id, {
           status: TransactionStatus.FAILED,
         });
       }
@@ -215,7 +219,7 @@ export class PaymentService {
     try {
       const currentTransaction = await this.transactionService.existsByParams({
         account: params.invoice_number,
-        status: TransactionStatus.SUCCESS,
+        status: TransactionStatus.CONFIRMED,
       });
 
       if (currentTransaction) {
@@ -225,10 +229,17 @@ export class PaymentService {
         );
       }
 
+      const extraData: Record<string, any> = {
+        carNumber: params.car_number,
+        account: params.invoice_number,
+        source: params.source,
+        cardToken: params.card_token,
+      };
+
       if (params.amount > 1000000) {
-        return await this.preparePayById(payload, lang);
+        return await this.preparePayById(payload, lang, extraData);
       } else {
-        return await this.payById(payload, lang);
+        return await this.payById(payload, lang, extraData);
       }
     } catch (error: any) {
       if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {

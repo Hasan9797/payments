@@ -22,7 +22,7 @@ import {
   PamSendSmsRequest,
 } from './requests';
 
-import { PamPrepareRequestDto, PamPayByIdRequestDto } from '../dto';
+import { PamPayByIdRequestDto } from '../dto';
 
 @Injectable()
 export class InfinityPayGateService {
@@ -57,7 +57,7 @@ export class InfinityPayGateService {
   }
 
   // ---------------------------- PAY BY CARD ------------------------------
-  async payPrepare(preparePay: PamPrepareRequestDto) {
+  async payPrepare(preparePay: PamPayByIdRequestDto) {
     const request = new PamPreparePayRequest(preparePay);
     const response = await request.send();
 

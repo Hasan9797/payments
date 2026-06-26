@@ -4,23 +4,22 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@prisma';
-import { PayGateService } from '../payment/pay-gate.service';
+
+import { InfinityPayGateService } from '../../integrations/infinity-pay/infinity-pay-gate.service';
 import {
   CreateVendorFormDto,
   UpdateVendorFormDto,
 } from './dto/create-update.vendor-form.dto';
-import { paginate } from 'src/common/helpers/paginate';
 import { GetVendorFormDto } from './dto/get-vendor-form.dto';
-import { QRVendorParams } from '@interfaces';
+import { PrismaService } from '@/common/prisma/prisma.service';
 
 @Injectable()
 export class VendorFormService {
   private readonly logger = new Logger(VendorFormService.name);
 
   constructor(
-    private prisma: PrismaService,
-    private payGate: PayGateService,
+    private readonly prisma: PrismaService,
+    private readonly payGate: InfinityPayGateService,
   ) {}
 
   async createVendor(data: CreateVendorFormDto) {

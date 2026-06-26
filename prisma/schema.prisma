@@ -19,7 +19,7 @@ enum StatusEnum {
 
 model Transaction {
   id                   Int        @id @default(autoincrement())
-  userId               String?    @map("user_id")
+  userId               Int?       @map("user_id")
   maskedPhone          String?    @map("masked_phone")
   bankTransactionId    String?    @map("bank_transaction_id")
   cardNumber           String?    @map("card_number")
@@ -48,9 +48,20 @@ model Transaction {
 }
 
 model Vendor {
-  id        Int      @id @default(autoincrement())
-  name      String
-  status    String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameUz      String   @map("name_uz")
+  nameRu      String   @map("name_ru")
+  nameEng     String   @map("name_en")
+  shortName   String   @map("short_name")
+  shortNameUz String   @map("short_name_uz")
+  shortNameRu String   @map("short_name_ru")
+  shortNameEn String   @map("short_name_en")
+  vendorId    Int      @map("vendor_id")
+  categoryId  Int      @map("category_id")
+  logo        String
+  url         String
+  status      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 }

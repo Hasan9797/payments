@@ -1,10 +1,7 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InfinityPayGateService } from '@/integrations/infinity-pay/infinity-pay-gate.service';
 import { TransactionService } from '../transactions/transaction.service';
-import {
-  PamPrepareRequestDto,
-  PamPayByIdRequestDto,
-} from '../../integrations/dto';
+import { PamPayByIdRequestDto } from '../../integrations/dto';
 import { VendorFormService } from '../vendor-forms/vendor-form.service';
 import { VendorService } from '../vendors/vendor.service';
 import {
@@ -56,7 +53,7 @@ export class PaymentService {
   }
 
   // ---------------------------- PAY BY CARD ------------------------------
-  async payPrepare(pamPrepareDto: PamPrepareRequestDto, userId: number = 2) {
+  async payPrepare(pamPrepareDto: PamPayByIdRequestDto, userId: number = 2) {
     const vendor = await this.vendorService.getByVendorId(
       Number(pamPrepareDto.vendor_form.vendor_id),
     );
@@ -127,18 +124,65 @@ export class PaymentService {
   async payById(
     requestBody: PamPayByIdRequestDto,
     lang: any,
-    extraData: Record<string, any> = {},
+    extraData: any = {},
   ) {
-    const headers = {
-      'Card-Token': extraData.cardToken,
-      'Accept-Language': lang,
-    };
+    let transaction: any = {};
+    try {
+      const vendorForms = await this.vendorFormService.getByVendorId(
+        requestBody.vendor_form.vendor_id,
+      );
+
+      if (vendorForms.length === 0) {
+        throw new HttpException('Vendor forms not found', 404);
+      }
+
+      VendorFormValidatorHelper.validateForm(vendorForms, requestBody);
+
+      transaction = await this.transactionService.create({
+        amount: requestBody.vendor_form.amount,
+        total: requestBody.vendor_form.amount,
+        cardId: requestBody.card_id,
+        user_id: requestBody.user_id,
+        cardToken: requestBody.card_token,
+        vendorId: requestBody.vendor_form.vendor_id,
+        status: TransactionStatus.CREATED,
+        request: JSON.stringify(requestBody),
+        ...extraData,
+      });
+
+      const headers = {
+        'Card-Token': requestBody.card_token,
+        'Accept-Language': lang,
+      };
+
+      const response = await this.payGate.payById(requestBody, headers);
+
+      await this.transactionService.update(transaction.id, {
+        maskedPhone: response.masked_phone,
+        partnerTransactionId: String(response.transaction_id),
+        status: TransactionStatus.CONFIRMED,
+        bankTransactionId: response.bank_transaction_id,
+        response: JSON.stringify(response),
+      });
+
+      return {
+        ...response,
+        transaction_id: transaction.id,
+      };
+    } catch (error: any) {
+      if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
+        await this.transactionService.update(transaction.id, {
+          status: TransactionStatus.FAILED,
+        });
+      }
+      throw new HttpException(error, error.status);
+    }
   }
 
   async preparePayById(
     requestBody: PamPayByIdRequestDto,
     lang: any,
-    extraData: Record<string, any> = {},
+    extraData: any = {},
   ) {
     let transaction: any = {};
     try {
@@ -156,22 +200,28 @@ export class PaymentService {
         'Accept-Language': lang,
       };
 
+      transaction = await this.transactionService.create({
+        amount: requestBody.vendor_form.amount,
+        total: requestBody.vendor_form.amount,
+        cardId: requestBody.card_id,
+        user_id: requestBody.user_id,
+        cardToken: requestBody.card_token,
+        vendorId: requestBody.vendor_form.vendor_id,
+        status: TransactionStatus.CREATED,
+        request: JSON.stringify(requestBody),
+        ...extraData,
+      });
+
       const { result, bankTransactionId } = await this.payGate.preparePayById(
         requestBody,
         headers,
       );
 
-      transaction = await this.transactionService.create({
-        maskedPhone: result.masked_phone,
-        amount: requestBody.vendor_form.amount,
-        total: requestBody.vendor_form.amount,
-        cardId: requestBody.pay_form.card_id,
-        vendorId: requestBody.vendor_form.vendor_id,
-        bankTransactionId: bankTransactionId,
+      await this.transactionService.update(transaction.id, {
+        maskedPhone: result.masked_phone_number,
         status: TransactionStatus.PENDING,
-        request: JSON.stringify(requestBody),
+        bankTransactionId,
         response: JSON.stringify(result),
-        ...extraData,
       });
 
       return {
@@ -233,7 +283,6 @@ export class PaymentService {
         carNumber: params.car_number,
         account: params.invoice_number,
         source: params.source,
-        cardToken: params.card_token,
       };
 
       if (params.amount > 1000000) {
@@ -242,11 +291,6 @@ export class PaymentService {
         return await this.payById(payload, lang, extraData);
       }
     } catch (error: any) {
-      if (error.status == -2 || error.message == 'timeout of 100ms exceeded') {
-        await this.transactionService.update(params.transaction_id, {
-          status: TransactionStatus.FAILED,
-        });
-      }
       throw new HttpException(error, error.status);
     }
   }

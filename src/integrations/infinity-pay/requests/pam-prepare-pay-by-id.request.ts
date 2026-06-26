@@ -7,7 +7,12 @@ export class PamPreparePayByIdRequest extends InfinityPayHttpClient {
     super();
 
     this.setMethod(RequestMethodEnum.PAM_PREPARE_PAY_BY_ID)
-      .setParams(requestData)
+      .setParams({
+        vendor_form: requestData.vendor_form,
+        pay_form: {
+          card_id: requestData.card_id,
+        },
+      })
       .setIsLog(true);
   }
 

@@ -24,7 +24,6 @@ export interface VendorTemplateRow {
 
 export class VendorFormValidatorHelper {
   /**
-   * Bazadan olingan barcha qatorlarni request'dagi vendor_form va pay_form ichida borligini tekshirish
    * @param templateRows Bazadan kelgan barcha input qatorlari massivi
    * @param requestBody Requestdan kelgan butun tana (body)
    */
@@ -35,7 +34,6 @@ export class VendorFormValidatorHelper {
     const errors: Record<string, string[]> = {};
 
     const vendorForm = requestBody?.vendor_form || {};
-    const payForm = requestBody?.pay_form || {};
 
     // Bazadan kelgan har bir qator (input) bo'yicha aylanib chiqamiz
     for (const row of templateRows) {
@@ -82,8 +80,12 @@ export class VendorFormValidatorHelper {
       }
     }
 
-    if (payForm?.card_id) {
-      errors['card_id'] = [`Поле "Номер карты" обязательно для заполнения.`];
+    if (!requestBody.card_token || !requestBody.card_id) {
+      if (Object.keys(errors).length > 0) {
+        errors['card_data'] = [
+          `Поле Карта ID или Карта Токен имеет неверный формат.`,
+        ];
+      }
     }
 
     // 6. Agar kamida bitta xatolik topilsa, NestJS standart BadRequestException (400) otamiz

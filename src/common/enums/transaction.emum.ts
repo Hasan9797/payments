@@ -1,16 +1,18 @@
 export enum TransactionStatus {
-  CREATED = 'CREATED',
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  FAILED = 'FAILED',
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  CONFIRMED = 'confirmed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
 }
 
 export enum TransactionType {
-  FINE = 'FINE',
-  INSURANCE = 'INSURANCE',
-  Tinting = 'TINTING',
-  EmiFines = 'EMI_FINES',
-  Other = 'OTHER',
-  Sticker = 'STICKER',
-  DrbPurchase = 'DRB_PURCHASE',
+  FINE = 'fine',
+  INSURANCE = 'insurance',
+  Tinting = 'tinting',
+  EmiFines = 'emi_fines',
+  Other = 'other',
+  Sticker = 'sticker',
+  DrbPurchase = 'drb_purchase',
 }

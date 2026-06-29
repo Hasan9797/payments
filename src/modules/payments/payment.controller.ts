@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { GetCategoryDto } from '../categories/dto/get-category.dto';
-import { PamPrepareRequestDto } from '../../integrations/dto';
+import { PamPayByIdRequestDto } from '../../integrations/dto';
 import { CreatePaymentByIdDto } from './dto/payment.dto';
 
 @Controller('payment')
@@ -23,8 +23,11 @@ export class PaymentController {
 
   // -------------- Pay By Card --------------
   @Post('pay-prepare')
-  payPrepare(@Body() body: PamPrepareRequestDto) {
-    return this.paymentService.payPrepare(body);
+  payPrepare(
+    @Body() body: PamPayByIdRequestDto,
+    @Headers('Accept-Language') lang: any,
+  ) {
+    return this.paymentService.payPrepare(body, lang);
   }
 
   @Post('pay-confirm')
@@ -37,7 +40,10 @@ export class PaymentController {
 
   // -------------- Pay By ID --------------
   @Post('pay-by-id')
-  async payById(@Body() body: any, @Headers('Accept-Language') lang: any) {
+  async payById(
+    @Body() body: PamPayByIdRequestDto,
+    @Headers('Accept-Language') lang: any,
+  ) {
     return await this.paymentService.payById(body, lang);
   }
 

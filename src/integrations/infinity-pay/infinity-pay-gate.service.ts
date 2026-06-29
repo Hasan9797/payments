@@ -43,8 +43,8 @@ export class InfinityPayGateService {
   }
 
   // ---------------------------- PAY INFO ------------------------------
-  async payInfo(vendorForm: any, amount_column: string) {
-    const request = new PamCheckRequest(vendorForm, amount_column);
+  async payInfo(vendorForm: any) {
+    const request = new PamCheckRequest(vendorForm);
     const response = await request.send();
 
     if (!response.isOk()) {

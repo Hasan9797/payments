@@ -3,11 +3,8 @@ import { InfinityPayHttpClient } from '../http-client';
 import { PamResponse } from '@/common/interfaces';
 
 export class PamCheckRequest extends InfinityPayHttpClient {
-  private amount_column = 'amount';
-
-  constructor(vendorForm: any, amount_column: string) {
+  constructor(vendorForm: any) {
     super();
-    this.amount_column = amount_column;
     this.setMethod(RequestMethodEnum.PAM_CHECK)
       .setParams({ vendor_form: vendorForm })
       .setIsLog(true);

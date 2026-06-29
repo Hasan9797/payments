@@ -47,21 +47,26 @@ export class PaymentService {
     const vendor = await this.vendorService.getByVendorId(
       parseInt(vendorForm.vendor_id),
     );
-    const payInfo = await this.payGate.payInfo(vendorForm, 'saldo');
+    const payInfo = await this.payGate.payInfo(vendorForm);
 
     return { ...payInfo, vendor };
   }
 
   // ---------------------------- PAY BY CARD ------------------------------
-  async payPrepare(pamPrepareDto: PamPayByIdRequestDto, userId: number = 2) {
+  async payPrepare(pamPrepareDto: PamPayByIdRequestDto, lang: any) {
     const vendor = await this.vendorService.getByVendorId(
       Number(pamPrepareDto.vendor_form.vendor_id),
     );
 
     const transaction = await this.transactionService.create({
-      user_id: userId,
       amount: pamPrepareDto.vendor_form.amount,
-      vendor_id: Number(pamPrepareDto.vendor_form.vendor_id),
+      total: pamPrepareDto.vendor_form.amount,
+      cardId: pamPrepareDto.card_id,
+      userId: pamPrepareDto.user_id,
+      cardToken: pamPrepareDto.card_token,
+      vendorId: pamPrepareDto.vendor_form.vendor_id,
+      status: TransactionStatus.PENDING,
+      request: JSON.stringify(pamPrepareDto),
     });
 
     if (!transaction) throw new HttpException('Transaction not created', 500);
@@ -69,7 +74,7 @@ export class PaymentService {
     const response = await this.payGate.payPrepare(pamPrepareDto);
 
     await this.transactionService.update(transaction.id, {
-      status: TransactionStatus.PENDING,
+      status: TransactionStatus.PROCESSING,
       bankTransactionId: response.bank_transaction_id,
     });
 
@@ -99,6 +104,7 @@ export class PaymentService {
       await this.transactionService.update(transaction.id, {
         status: TransactionStatus.CONFIRMED,
         partnerTransactionId: parseInt(response.transaction_id),
+        response: JSON.stringify(response),
       });
 
       return {
@@ -142,10 +148,10 @@ export class PaymentService {
         amount: requestBody.vendor_form.amount,
         total: requestBody.vendor_form.amount,
         cardId: requestBody.card_id,
-        user_id: requestBody.user_id,
+        userId: requestBody.user_id,
         cardToken: requestBody.card_token,
         vendorId: requestBody.vendor_form.vendor_id,
-        status: TransactionStatus.CREATED,
+        status: TransactionStatus.PENDING,
         request: JSON.stringify(requestBody),
         ...extraData,
       });
@@ -207,7 +213,7 @@ export class PaymentService {
         user_id: requestBody.user_id,
         cardToken: requestBody.card_token,
         vendorId: requestBody.vendor_form.vendor_id,
-        status: TransactionStatus.CREATED,
+        status: TransactionStatus.PENDING,
         request: JSON.stringify(requestBody),
         ...extraData,
       });
@@ -219,7 +225,7 @@ export class PaymentService {
 
       await this.transactionService.update(transaction.id, {
         maskedPhone: result.masked_phone_number,
-        status: TransactionStatus.PENDING,
+        status: TransactionStatus.PROCESSING,
         bankTransactionId,
         response: JSON.stringify(result),
       });

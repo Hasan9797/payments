@@ -17,8 +17,13 @@ export class PamPayByIdRequestDto {
   vendor_form: any;
 
   @IsString()
-  card_id?: string;
+  card_id: string;
+}
 
+export class PamPayConfirmRequestDto {
   @IsString()
-  card_token?: string;
+  confirm_code: string;
+
+  @IsNumber()
+  transaction_id: number;
 }

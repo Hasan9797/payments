@@ -9,7 +9,10 @@ import {
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { GetCategoryDto } from '../categories/dto/get-category.dto';
-import { PamPayByIdRequestDto } from '../../integrations/dto';
+import {
+  PamPayConfirmRequestDto,
+  PamPayByIdRequestDto,
+} from '../../integrations/dto';
 import { CreatePaymentByIdDto } from './dto/payment.dto';
 
 @Controller('payment')
@@ -31,7 +34,7 @@ export class PaymentController {
   }
 
   @Post('pay-confirm')
-  async payConfirm(@Body() body: any) {
+  async payConfirm(@Body() body: PamPayConfirmRequestDto) {
     return await this.paymentService.payConfirm(
       body.confirm_code,
       body.transaction_id,

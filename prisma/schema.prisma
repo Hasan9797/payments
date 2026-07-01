@@ -47,21 +47,60 @@ model Transaction {
   @@map("transactions")
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  nameUz    String?  @map("name_uz")
+  nameRu    String?  @map("name_ru")
+  nameEng   String?  @map("name_en")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
 model Vendor {
   id          Int      @id @default(autoincrement())
   name        String
-  nameUz      String   @map("name_uz")
-  nameRu      String   @map("name_ru")
-  nameEng     String   @map("name_en")
+  nameUz      String?  @map("name_uz")
+  nameRu      String?  @map("name_ru")
+  nameEng     String?  @map("name_en")
   shortName   String   @map("short_name")
-  shortNameUz String   @map("short_name_uz")
-  shortNameRu String   @map("short_name_ru")
-  shortNameEn String   @map("short_name_en")
-  vendorId    Int      @map("vendor_id")
+  shortNameUz String?  @map("short_name_uz")
+  shortNameRu String?  @map("short_name_ru")
+  shortNameEn String?  @map("short_name_en")
+  vendorId    Int      @unique @map("vendor_id")
   categoryId  Int      @map("category_id")
   logo        String
   url         String
   status      String
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+}
+
+model VendorForm {
+  id          Int      @id @default(autoincrement())
+  vendorId    Int      @map("vendor_id")
+  key         String
+  value       String?
+  type        String?
+  show        Int?
+  label       String?
+  labelRu     String?  @map("label_ru")
+  labelEn     String?  @map("label_en")
+  labelUz     String?  @map("label_uz")
+  options     Json?
+  mask        String?
+  element     String?
+  prefix      String?
+  regex       String?
+  placeholder String?  @map("placeholder")
+  isRequired  Int?     @map("is_required")
+  size        Int?
+  amountType  String?  @map("amount_type")
+  minAmount   String?  @map("min_amount")
+  maxAmount   String?  @map("max_amount")
+  order       Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([vendorId, key])
 }

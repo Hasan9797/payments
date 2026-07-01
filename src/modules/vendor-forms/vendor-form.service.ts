@@ -10,7 +10,6 @@ import {
   CreateVendorFormDto,
   UpdateVendorFormDto,
 } from './dto/create-update.vendor-form.dto';
-import { GetVendorFormDto } from './dto/get-vendor-form.dto';
 import { PrismaService } from '@/common/prisma/prisma.service';
 
 @Injectable()
@@ -25,7 +24,7 @@ export class VendorFormService {
   async createVendor(data: CreateVendorFormDto) {
     let vendor = await this.prisma.vendor.findUnique({
       where: {
-        vendor_id: data.vendor_id,
+        vendorId: data.vendorId,
       },
     });
 
@@ -39,19 +38,32 @@ export class VendorFormService {
     });
   }
 
-  async getVendorForms(query: GetVendorFormDto) {
-    let vendors = await paginate('vendor', {
-      page: query.page,
-      size: query.size,
-      filter: query.filters,
-      where: {
-        category: {
-          id: query.categoryId,
-        },
-      },
-    });
+  async getVendorForms(query: any) {
+    const page = query.page || 1;
+    const size = query.size || 10;
+    const skip = (page - 1) * size;
 
-    return vendors;
+    const [data, total] = await Promise.all([
+      this.prisma.vendorForm.findMany({
+        where: { vendorId: query.vendorId },
+        skip,
+        take: size,
+        orderBy: { id: 'asc' },
+      }),
+      this.prisma.vendorForm.count({
+        where: { vendorId: query.vendorId },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        size,
+        lastPage: Math.ceil(total / size),
+      },
+    };
   }
 
   async getById(id: number) {
@@ -61,7 +73,7 @@ export class VendorFormService {
 
     let vendorForms = await this.prisma.vendorForm.findMany({
       where: {
-        vendor_id: vendor.vendor_id,
+        vendorId: vendor.vendorId,
       },
     });
 
@@ -92,15 +104,10 @@ export class VendorFormService {
     });
   }
 
-  async reloadForm(id: number) {
+  async reloadForm(vendorId: number) {
     let vendorData = await this.prisma.vendor.findUnique({
       where: {
-        id: id,
-        vendorForms: {
-          some: {
-            notChange: true,
-          },
-        },
+        id: vendorId,
       },
     });
 
@@ -108,14 +115,14 @@ export class VendorFormService {
       throw new NotFoundException('Category not found');
     }
 
-    let vendor_forms = await this.payGate.getVendorForm(vendorData.vendor_id);
+    let vendorForms = await this.payGate.getVendorForm(vendorData.vendorId);
 
-    for (const vendor of vendor_forms) {
+    for (const vendor of vendorForms) {
       await this.prisma.vendorForm.upsert({
         where: {
-          vendor_id_key: {
+          vendorId_key: {
             key: vendor.key,
-            vendor_id: vendorData.vendor_id,
+            vendorId: vendorData.vendorId,
           },
         },
         create: {
@@ -124,46 +131,36 @@ export class VendorFormService {
           type: vendor.type,
           show: vendor.show,
           label: vendor.label,
-          label_ru: vendor.label_ru,
-          label_uz: vendor.label_uz,
-          label_en: vendor.label_en,
           options: vendor.options,
           element: vendor.element,
           mask: vendor.mask,
           prefix: vendor.prefix,
           regex: vendor.regex,
-          is_required: vendor.is_required,
+          isRequired: vendor.is_required,
           placeholder: vendor.placeholder,
           size: vendor.size,
-          amount_type: vendor.amount_type,
-          min_amount: vendor.min_amount,
-          max_amount: vendor.max_amount,
-          accaunt_field: vendor.accaunt_field,
-          amount_field: vendor.amount_field,
+          amountType: vendor.amount_type,
+          minAmount: vendor.min_amount,
+          maxAmount: vendor.max_amount,
           order: vendor.order,
-          vendor_id: vendorData.vendor_id,
+          vendorId: vendorData.vendorId,
         },
         update: {
           key: vendor.key,
           value: `${vendor.value}`,
           show: vendor.show,
           label: vendor.label,
-          label_ru: vendor.label_ru,
-          label_uz: vendor.label_uz,
-          label_en: vendor.label_en,
           options: vendor.options,
           element: vendor.element,
           mask: vendor.mask,
           prefix: vendor.prefix,
           regex: vendor.regex,
-          is_required: vendor.is_required,
+          isRequired: vendor.is_required,
           placeholder: vendor.placeholder,
           size: vendor.size,
-          amount_type: vendor.amount_type,
-          min_amount: vendor.min_amount,
-          max_amount: vendor.max_amount,
-          accaunt_field: vendor.accaunt_field,
-          amount_field: vendor.amount_field,
+          amountType: vendor.amount_type,
+          minAmount: vendor.min_amount,
+          maxAmount: vendor.max_amount,
           order: vendor.order,
           type: vendor.type,
         },
@@ -175,18 +172,9 @@ export class VendorFormService {
     };
   }
 
-  async reloadCategoryVendorsForm(id: number) {
+  async reloadVendorsFormByCategoryId(id: number) {
     let vendorsData = await this.prisma.vendor.findMany({
-      where: {
-        category: {
-          id,
-        },
-        vendorForms: {
-          none: {
-            notChange: true,
-          },
-        },
-      },
+      where: { categoryId: id },
     });
 
     if (!vendorsData.length) {
@@ -194,62 +182,53 @@ export class VendorFormService {
     }
 
     for (const vendorData of vendorsData) {
-      let vendor_forms = await this.payGate.getVendorForm(vendorData.vendor_id);
+      let vendorForms = await this.payGate.getVendorForm(vendorData.vendorId);
 
-      for (const vendor of vendor_forms) {
+      for (const vendor of vendorForms) {
         await this.prisma.vendorForm.upsert({
+          // Biz kiritgan unikal kombinatsiya bo'yicha qidiramiz
           where: {
-            vendor_id_key: {
+            vendorId_key: {
+              vendorId: vendorData.vendorId,
               key: vendor.key,
-              vendor_id: vendorData.vendor_id,
             },
           },
           create: {
             key: vendor.key,
-            value: `${vendor.value}`,
-            type: vendor.type,
+            value: vendor.value ? `${vendor.value}` : null,
             show: vendor.show,
             label: vendor.label,
-            label_ru: vendor.label_ru,
-            label_uz: vendor.label_uz,
-            label_en: vendor.label_en,
-            options: vendor.options,
+            options: vendor.options as any, // Prisma Json turi uchun xatolik bermasligi uchun
             element: vendor.element,
             mask: vendor.mask,
             prefix: vendor.prefix,
             regex: vendor.regex,
-            is_required: vendor.is_required,
+            isRequired: vendor.is_required,
             placeholder: vendor.placeholder,
             size: vendor.size,
-            amount_type: vendor.amount_type,
-            min_amount: vendor.min_amount,
-            max_amount: vendor.max_amount,
-            accaunt_field: vendor.accaunt_field,
-            amount_field: vendor.amount_field,
+            amountType: vendor.amount_type,
+            minAmount: vendor.min_amount ? `${vendor.min_amount}` : null,
+            maxAmount: vendor.max_amount ? `${vendor.max_amount}` : null,
             order: vendor.order,
-            vendor_id: vendorData.vendor_id,
+            type: vendor.type,
+            vendorId: vendorData.vendorId,
           },
           update: {
             key: vendor.key,
-            value: `${vendor.value}`,
+            value: vendor.value ? `${vendor.value}` : null,
             show: vendor.show,
             label: vendor.label,
-            label_ru: vendor.label_ru,
-            label_uz: vendor.label_uz,
-            label_en: vendor.label_en,
-            options: vendor.options,
+            options: vendor.options as any,
             element: vendor.element,
             mask: vendor.mask,
             prefix: vendor.prefix,
             regex: vendor.regex,
-            is_required: vendor.is_required,
+            isRequired: vendor.is_required,
             placeholder: vendor.placeholder,
             size: vendor.size,
-            amount_type: vendor.amount_type,
-            min_amount: vendor.min_amount,
-            max_amount: vendor.max_amount,
-            accaunt_field: vendor.accaunt_field,
-            amount_field: vendor.amount_field,
+            amountType: vendor.amount_type,
+            minAmount: vendor.min_amount ? `${vendor.min_amount}` : null,
+            maxAmount: vendor.max_amount ? `${vendor.max_amount}` : null,
             order: vendor.order,
             type: vendor.type,
           },
@@ -260,27 +239,5 @@ export class VendorFormService {
     return {
       message: 'Successfully',
     };
-  }
-
-  async getParamsByVendorFormForPamCheck(
-    qrVendor: QRVendorParams,
-    pAcc: string,
-  ) {
-    const inputForms = await this.prisma.vendorForm.findMany({
-      where: { vendor_id: qrVendor.vendor_id },
-    });
-
-    return inputForms.reduce((acc, form) => {
-      if (form.element === 'select') {
-        acc[form.key] = form.options[0].value;
-        return acc;
-      }
-      if (qrVendor.invoice.includes(form.key)) {
-        acc[form.key] = pAcc;
-        return acc;
-      }
-      acc[form.key] = form.value;
-      return acc;
-    }, {});
   }
 }

@@ -9,6 +9,7 @@ import {
   TransactionType,
 } from '@/common/enums/transaction.emum';
 import { VendorFormValidatorHelper } from '@/common/helpers/vendor-form-validate.helper';
+import { CardService } from '../cards/card.service';
 
 @Injectable()
 export class PaymentService {
@@ -18,6 +19,7 @@ export class PaymentService {
     private readonly transactionService: TransactionService,
     private readonly vendorService: VendorService,
     private readonly vendorFormService: VendorFormService,
+    private readonly cardService: CardService,
   ) {}
 
   async fincorPay(vendorFormData: any) {
@@ -47,6 +49,9 @@ export class PaymentService {
     const vendor = await this.vendorService.getByVendorId(
       parseInt(vendorForm.vendor_id),
     );
+
+    if (!vendor) throw new HttpException('Vendor not found', 404);
+
     const payInfo = await this.payGate.payInfo(vendorForm);
 
     return { ...payInfo, vendor };
@@ -58,12 +63,16 @@ export class PaymentService {
       Number(pamPrepareDto.vendor_form.vendor_id),
     );
 
+    const cardToken = await this.cardService.getCardToken(
+      pamPrepareDto.card_id,
+    );
+
     const transaction = await this.transactionService.create({
       amount: pamPrepareDto.vendor_form.amount,
       total: pamPrepareDto.vendor_form.amount,
       cardId: pamPrepareDto.card_id,
       userId: pamPrepareDto.user_id,
-      cardToken: pamPrepareDto.card_token,
+      cardToken: cardToken,
       vendorId: pamPrepareDto.vendor_form.vendor_id,
       status: TransactionStatus.PENDING,
       request: JSON.stringify(pamPrepareDto),
@@ -103,13 +112,13 @@ export class PaymentService {
 
       await this.transactionService.update(transaction.id, {
         status: TransactionStatus.CONFIRMED,
-        partnerTransactionId: parseInt(response.transaction_id),
+        partnerTransactionId: String(response.transaction_id),
         response: JSON.stringify(response),
       });
 
       return {
         ...response,
-        partner_transaction_id: response.transaction_id,
+        partner_transaction_id: String(response.transaction_id),
         transaction_id: transaction.id,
       };
     } catch (error: any) {
@@ -144,12 +153,16 @@ export class PaymentService {
 
       VendorFormValidatorHelper.validateForm(vendorForms, requestBody);
 
+      const cardToken = await this.cardService.getCardToken(
+        requestBody.card_id,
+      );
+
       transaction = await this.transactionService.create({
         amount: requestBody.vendor_form.amount,
         total: requestBody.vendor_form.amount,
         cardId: requestBody.card_id,
         userId: requestBody.user_id,
-        cardToken: requestBody.card_token,
+        cardToken: cardToken,
         vendorId: requestBody.vendor_form.vendor_id,
         status: TransactionStatus.PENDING,
         request: JSON.stringify(requestBody),
@@ -157,7 +170,7 @@ export class PaymentService {
       });
 
       const headers = {
-        'Card-Token': requestBody.card_token,
+        'Card-Token': cardToken,
         'Accept-Language': lang,
       };
 
@@ -202,6 +215,10 @@ export class PaymentService {
 
       VendorFormValidatorHelper.validateForm(vendorForms, requestBody);
 
+      const cardToken = await this.cardService.getCardToken(
+        requestBody.card_id,
+      );
+
       const headers = {
         'Accept-Language': lang,
       };
@@ -210,8 +227,8 @@ export class PaymentService {
         amount: requestBody.vendor_form.amount,
         total: requestBody.vendor_form.amount,
         cardId: requestBody.card_id,
-        user_id: requestBody.user_id,
-        cardToken: requestBody.card_token,
+        userId: requestBody.user_id,
+        cardToken: cardToken,
         vendorId: requestBody.vendor_form.vendor_id,
         status: TransactionStatus.PENDING,
         request: JSON.stringify(requestBody),

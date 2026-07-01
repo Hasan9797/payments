@@ -71,7 +71,6 @@ export class InfinityPayHttpClient {
     const headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json; charset=utf-8',
-      Cash: 'have',
       Auth: this.generateToken(),
       ...extraHeaders,
     };

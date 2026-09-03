@@ -1,11 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsArray, IsEnum, IsIn, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsEnum, IsIn, IsInt, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
 import { OperatorTypes, PaginationOptionalDto } from "src/common/enums/prisma.type";
 import { prisma } from "src/common/helpers/paginate";
 
-const vendorFields = Object.keys(prisma.vendor.fields); // qaysi table bo'lsa shu tableni nomi qo'yilishi kerak
+const vendorFields = Object.keys(prisma.vendor.fields);
 
 class VendorFilter {
     @IsIn(vendorFields)
@@ -36,17 +36,19 @@ export class GetVendorsDto extends PaginationOptionalDto {
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => VendorFilter)
-    @ApiProperty({ type: VendorFilter, isArray: true })
+    @ApiProperty({ type: VendorFilter, isArray: true, required: false })
     filters?: VendorFilter[];
 
     @IsOptional()
     @ValidateNested()
     @Type(() => VendorSort)
-    @ApiProperty({ type: VendorFilter })
+    @ApiProperty({ type: VendorSort, required: false })
     sort?: VendorSort;
 
     @IsOptional()
-    @ApiProperty({ type: String, required: false })
-    @IsNumber()
-    categoryId: number
+    @Type(() => Number)
+    @IsInt()
+    @IsPositive()
+    @ApiProperty({ type: Number, required: false, description: 'Filter by category id' })
+    categoryId?: number;
 }

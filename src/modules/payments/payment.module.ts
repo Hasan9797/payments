@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
-import { InfinityPayModule } from '../../integrations/infinity-pay/infinity-pay.module';
+import { InfinityPayModule } from '../../integrations/infinity-pay/infinitypay.module';
 
 @Module({
   imports: [InfinityPayModule],

@@ -1,5 +1,5 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
-import { InfinityPayGateService } from '@/integrations/infinity-pay/infinity-pay-gate.service';
+import { InfinityPayGateService } from '@/integrations/infinity-pay/infinitypay-gate.service';
 
 @Injectable()
 export class CardService {

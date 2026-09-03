@@ -1,5 +1,5 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
-import { InfinityPayGateService } from '@/integrations/infinity-pay/infinity-pay-gate.service';
+import { InfinityPayGateService } from '@/integrations/infinity-pay/infinitypay-gate.service';
 import { TransactionService } from '../transactions/transaction.service';
 import { PamPayByIdRequestDto } from '../../integrations/dto';
 import { VendorFormService } from '../vendor-forms/vendor-form.service';
@@ -223,7 +223,7 @@ export class PaymentService {
         'Accept-Language': lang,
       };
 
-      transaction = await this.transactionService.create({
+      const transaction = await this.transactionService.create({
         amount: requestBody.vendor_form.amount,
         total: requestBody.vendor_form.amount,
         cardId: requestBody.card_id,

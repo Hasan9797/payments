@@ -1,154 +1,96 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto/create-update.dto';
 import { GetVendorsDto } from './dto/get-vendor.dto';
+import { paginate } from 'src/common/helpers/paginate';
 
 @Injectable()
 export class VendorService {
-    private readonly logger = new Logger(VendorService.name)
+    private readonly logger = new Logger(VendorService.name);
 
     constructor(
-        private prisma: PrismaService,
+        private readonly prisma: PrismaService,
     ) { }
 
+    // ─── Create ──────────────────────────────────────────────────────────────────
+
     async createVendor(data: CreateVendorDto) {
-        let vendor = await this.prisma.vendor.findUnique({
-            where: {
-                vendor_id: data.vendor_id
+        this.logger.log(`Creating vendor with vendorId: ${data.vendorId}`);
+
+        // Prisma unique constraint xatosi (P2002) ni ushlaymiz —
+        // avvalgi findUnique + create pattern race condition uchun xavfli edi.
+        return this.prisma.vendor.create({ data }).catch((err) => {
+            if (err?.code === 'P2002') {
+                throw new ConflictException(`Vendor with vendorId ${data.vendorId} already exists`);
             }
-        })
-
-        this.logger.log({ vendor });
-
-        if (vendor) throw new ForbiddenException('Vendor_id already exists')
-
-        this.logger.log('Creating a new vendor');
-        return this.prisma.vendor.create({
-            data,
+            throw err;
         });
     }
 
-    async getVendors(query: GetVendorsDto) {
+    // ─── Read ─────────────────────────────────────────────────────────────────────
 
-        let vendors = await paginate('vendor', {
+    async getVendors(query: GetVendorsDto) {
+        this.logger.log('Fetching vendors');
+
+        return paginate('vendor', {
             page: query.page,
             size: query.size,
             filter: query.filters,
-            where: {
-                category: {
-                    id: query.categoryId
-                }
-            }
-        })
-
-        return vendors
+            sort: query.sort,
+            // categoryId berilgan bo'lsa where ga qo'shamiz
+            ...(query.categoryId && {
+                where: { categoryId: query.categoryId },
+            }),
+        });
     }
 
     async getVendorById(id: number) {
-        this.logger.log(`Fetching vendor with id: ${id} forms`);
-        let vendor = await this.prisma.vendor.findFirst({ where: { id } })
-        if (!vendor) throw new NotFoundException('Vendor not found')
+        this.logger.log(`Fetching vendor id=${id} with forms`);
 
-        let vendorForms = await this.prisma.vendorForm.findMany({
-            where: {
-                vendor_id: vendor.vendor_id
-            }
-        })
+        // Avval 2 ta alohida query bor edi. Endi bitta query bilan include qilinadi.
+        const vendor = await this.prisma.vendor.findUnique({
+            where: { id },
+            include: { vendorForms: true },
+        });
 
-        return {
-            vendor: vendor,
-            vendor_form: vendorForms
-        }
+        if (!vendor) throw new NotFoundException(`Vendor with id=${id} not found`);
+
+        return vendor;
     }
 
     async getByVendorId(vendorId: number) {
-        this.logger.log(`Fetching vendor with id: ${vendorId}`);
-        return this.prisma.vendor.findFirst({
-            where: { vendor_id: vendorId }, include: {
+        this.logger.log(`Fetching vendor vendorId=${vendorId}`);
+
+        const vendor = await this.prisma.vendor.findUnique({
+            where: { vendorId },
+            include: {
                 vendorForms: {
-                    where: {
-                        amount_field: {
-                            not: null
-                        }
-                    }
-                }
-            }
+                    where: { amountType: { not: null } },
+                },
+            },
         });
+
+        if (!vendor) throw new NotFoundException(`Vendor with vendorId=${vendorId} not found`);
+
+        return vendor;
     }
+
+    // ─── Update ───────────────────────────────────────────────────────────────────
 
     async updateVendor(id: number, data: UpdateVendorDto) {
-        await this.getVendorById(id)
-        this.logger.log(`Updating vendor with id: ${id}`);
-        return this.prisma.vendor.update({
-            where: { id },
-            data,
-        });
+        // vendor mavjudligini tekshirib, so'ngra update qilamiz
+        await this.getVendorById(id);
+        this.logger.log(`Updating vendor id=${id}`);
+
+        return this.prisma.vendor.update({ where: { id }, data });
     }
+
+    // ─── Delete ───────────────────────────────────────────────────────────────────
 
     async deleteVendor(id: number) {
-        await this.getVendorById(id)
-        this.logger.log(`Deleting vendor with id: ${id}`);
-        return this.prisma.vendor.delete({
-            where: { id },
-        });
+        await this.getVendorById(id);
+        this.logger.log(`Deleting vendor id=${id}`);
+
+        return this.prisma.vendor.delete({ where: { id } });
     }
-
-    async reload(id: number) {
-        let category = await this.prisma.category.findUnique({
-            where: {
-                id: id
-            }
-        })
-
-        if (!category) {
-            throw new NotFoundException('Category not found')
-        }
-
-        let vendors = await this.vendorService.getCategoryVendors(category.key)
-        for (const vendor of vendors) {
-            await this.prisma.vendor.upsert({
-                where: {
-                    vendor_id: vendor?.vendor_id
-                },
-                create: {
-                    logo: vendor.logo,
-                    name: vendor.name,
-                    short_name: vendor.short_name,
-                    url: vendor.url,
-                    status: vendor.status == 1 ? Status.ACTIVE : Status.INACTIVE,
-                    vendor_id: vendor.vendor_id,
-                    category_id: category.key,
-                    description: vendor.description,
-                    name_ru: vendor.name_ru,
-                    name_uz: vendor.name_uz,
-                    name_en: vendor.name_en,
-                    short_name_ru: vendor.short_name_ru,
-                    short_name_en: vendor.short_name_uz,
-                    short_name_uz: vendor.short_name_en
-                },
-                update: {
-                    logo: vendor.logo,
-                    name: vendor.name,
-                    url: vendor.url,
-                    short_name: vendor.short_name,
-                    status: vendor.status == 1 ? Status.ACTIVE : Status.INACTIVE,
-                    vendor_id: vendor.vendor_id,
-                    category_id: category.key,
-                    description: vendor.description,
-                    name_ru: vendor.name_ru,
-                    name_uz: vendor.name_uz,
-                    name_en: vendor.name_en,
-                    short_name_ru: vendor.short_name_ru,
-                    short_name_en: vendor.short_name_uz,
-                    short_name_uz: vendor.short_name_en
-                }
-            })
-        }
-
-        return {
-            message: "Successfully"
-        }
-    }
-
-
 }

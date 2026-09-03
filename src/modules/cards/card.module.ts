@@ -1,7 +1,7 @@
 import { forwardRef, Logger, Module } from '@nestjs/common';
 import { CardService } from './card.service';
 import { CardController } from './card.controller';
-import { InfinityPayModule } from '../../integrations/infinity-pay/infinity-pay.module';
+import { InfinityPayModule } from '../../integrations/infinity-pay/infinitypay.module';
 
 @Module({
   imports: [InfinityPayModule],

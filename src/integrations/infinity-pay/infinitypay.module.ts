@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import infinityConfig from '../../common/config/infinity.config';
-import { InfinityPayGateService } from './infinity-pay-gate.service';
+import { InfinityPayGateService } from './infinitypay-gate.service';
 
 @Module({
   imports: [ConfigModule.forFeature(infinityConfig)],

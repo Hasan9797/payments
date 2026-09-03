@@ -5,12 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { InfinityPayGateService } from '../../integrations/infinity-pay/infinity-pay-gate.service';
+import { InfinityPayGateService } from '../../integrations/infinity-pay/infinitypay-gate.service';
 import {
   CreateVendorFormDto,
   UpdateVendorFormDto,
 } from './dto/create-update.vendor-form.dto';
 import { PrismaService } from '@/common/prisma/prisma.service';
+import { GetVendorFormDto } from './dto/get-vendor-form.dto';
 
 @Injectable()
 export class VendorFormService {
@@ -38,7 +39,7 @@ export class VendorFormService {
     });
   }
 
-  async getVendorForms(query: any) {
+  async getVendorForms(query: GetVendorFormDto) {
     const page = query.page || 1;
     const size = query.size || 10;
     const skip = (page - 1) * size;
@@ -239,5 +240,13 @@ export class VendorFormService {
     return {
       message: 'Successfully',
     };
+  }
+
+  async reloadCategoryVendorsForm(categoryId: number) {
+    let categoryData = await this.prisma.category.findUnique({
+      where: {
+        id: categoryId,
+      },
+    });
   }
 }

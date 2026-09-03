@@ -48,32 +48,41 @@ model Transaction {
 }
 
 model Category {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   name      String
-  nameUz    String?  @map("name_uz")
-  nameRu    String?  @map("name_ru")
-  nameEng   String?  @map("name_en")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  nameUz    String?   @map("name_uz")
+  nameRu    String?   @map("name_ru")
+  nameEng   String?   @map("name_en")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  vendors   Vendor[]
+
+  @@map("categories")
 }
 
 model Vendor {
-  id          Int      @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   name        String
-  nameUz      String?  @map("name_uz")
-  nameRu      String?  @map("name_ru")
-  nameEng     String?  @map("name_en")
-  shortName   String   @map("short_name")
-  shortNameUz String?  @map("short_name_uz")
-  shortNameRu String?  @map("short_name_ru")
-  shortNameEn String?  @map("short_name_en")
-  vendorId    Int      @unique @map("vendor_id")
-  categoryId  Int      @map("category_id")
+  nameUz      String?      @map("name_uz")
+  nameRu      String?      @map("name_ru")
+  nameEng     String?      @map("name_en")
+  shortName   String       @map("short_name")
+  shortNameUz String?      @map("short_name_uz")
+  shortNameRu String?      @map("short_name_ru")
+  shortNameEn String?      @map("short_name_en")
+  vendorId    Int          @unique @map("vendor_id")
+  categoryId  Int          @map("category_id")
   logo        String
-  url         String
+  url         String?
   status      String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  category    Category     @relation(fields: [categoryId], references: [id])
+  vendorForms VendorForm[]
+
+  @@map("vendors")
 }
 
 model VendorForm {
@@ -102,5 +111,8 @@ model VendorForm {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  vendor      Vendor   @relation(fields: [vendorId], references: [vendorId])
+
   @@unique([vendorId, key])
+  @@map("vendor_forms")
 }
